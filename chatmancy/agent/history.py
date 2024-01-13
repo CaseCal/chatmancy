@@ -60,24 +60,33 @@ class StaticHistoryGenerator(HistoryGenerator):
 
 
 class HistoryManager:
+    """
+    Manages the history of messages in a conversation.
+
+    Args:
+        generator (List[str] | HistoryGenerator): The generator used to
+            create the history.
+        max_prefix_tokens (int, optional): The maximum number of tokens to include in
+            the prefix. Defaults to None.
+
+    Raises:
+        TypeError: If the generator is not a list of statements or a HistoryGenerator.
+
+    Attributes:
+        max_prefix_tokens (int): The maximum number of tokens to include in the prefix.
+        generator (HistoryGenerator): The generator used to create the history.
+
+    Methods:
+        create_history: Creates the history based on the
+            input message, context, and maximum number of tokens.
+    """
+
     def __init__(
         self,
-        system_message: (str | Message),
         generator: (List[str] | HistoryGenerator),
         max_prefix_tokens: int = None,
     ) -> None:
-        # System message
-        if isinstance(system_message, str):
-            self.system_message = Message(sender="system", content=system_message)
-        else:
-            self.system_message = system_message
-
         # Tokens
-        if max_prefix_tokens is not None:
-            if system_message.token_count > max_prefix_tokens:
-                raise ValueError(
-                    "The system message is longer than the maximum prefix tokens"
-                )
         self.max_prefix_tokens = max_prefix_tokens
 
         # Create prefix
@@ -103,8 +112,17 @@ class HistoryManager:
     def _create_prefix(
         self, input_message: Message, context: Dict[str, str]
     ) -> MessageQueue:
+        """
+        Creates the prefix for the history based on the input message and context.
+
+        Args:
+            input_message (Message): The input message.
+            context (Dict[str, str]): The context of the conversation.
+
+        Returns:
+            MessageQueue: The prefix for the history.
+        """
         prefix = self.generator.create_history(input_message, context)
-        prefix.appendleft(self.system_message)
         if self.max_prefix_tokens is not None:
             prefix = MessageQueue(prefix.get_last_n_tokens(self.max_prefix_tokens))
         return prefix
@@ -117,6 +135,23 @@ class HistoryManager:
         context: Dict[str, str],
         max_tokens: int,
     ) -> MessageQueue:
+        """
+        Creates the history based on the input message, history, context,
+            and maximum number of tokens.
+
+        Args:
+            input_message (Message): The input message.
+            history (MessageQueue): The history of messages in the conversation.
+            context (Dict[str, str]): The context of the conversation.
+            max_tokens (int): The maximum number of tokens in the history.
+
+        Returns:
+            MessageQueue: The created history.
+
+        Raises:
+            ValueError: If the maximum number of tokens is less than the number
+                 of tokens in the context and input message.
+        """
         # Prepare prefix
         logging.getLogger("Agent.HistoryManager").debug("Creating prefix")
         logging.getLogger("Agent.HistoryManager").debug(
@@ -149,3 +184,49 @@ class HistoryManager:
 
         # Combine
         return prefix + history + [context_message]
+
+
+class GPTHistoryManager(HistoryManager):
+    def __init__(
+        self,
+        system_message: Message,
+        generator: (List[str] | HistoryGenerator),
+        max_prefix_tokens: int = None,
+    ) -> None:
+        super().__init__(generator, max_prefix_tokens)
+        # System message check
+        if system_message.sender != "system":
+            logging.getLogger("GPTAgent.HistoryManager").warning(
+                (
+                    "The system message should have sender 'system', "
+                    "it will be replaced with a system message"
+                )
+            )
+            system_message = Message(
+                sender="system",
+                content=system_message,
+                token_count=system_message.token_count,
+            )
+
+        # Token check
+        if self.max_prefix_tokens is not None:
+            if system_message.token_count > self.max_prefix_tokens:
+                raise ValueError(
+                    (
+                        "The system message has more tokens than the maximum "
+                        "number of prefix tokens"
+                    )
+                )
+
+        # System message
+        if isinstance(system_message, str):
+            self.system_message = Message(sender="system", content=system_message)
+        else:
+            self.system_message = system_message
+
+    def _create_prefix(
+        self, input_message: Message, context: Dict[str, str]
+    ) -> MessageQueue:
+        prefix = super()._create_prefix(input_message, context)
+        prefix.appendleft(self.system_message)
+        return prefix
