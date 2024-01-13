@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import logging
@@ -23,7 +24,7 @@ class TokenSettings:
     min_response_tokens: int = 750
 
 
-class Agent:
+class Agent(ABC):
     """Agent base class for generating chat responses."""
 
     def __init__(
@@ -38,28 +39,29 @@ class Agent:
         self.name = name
         self.desc = desc
 
-        self.logger = self.initialize_logger(name, **kwargs)
-        self.token_settings = self.initialize_token_settings(token_settings, **kwargs)
-        self.model_handler = self.initialize_model_handler(**kwargs)
-        self.history_manager = self.initialize_history_manager(history, **kwargs)
-        self.function_handler = self.initialize_function_handler(functions, **kwargs)
+        self.logger = self._initialize_logger(name, **kwargs)
+        self.token_settings = self._initialize_token_settings(token_settings, **kwargs)
+        self.model_handler = self._initialize_model_handler(**kwargs)
+        self.history_manager = self._initialize_history_manager(history, **kwargs)
+        self.function_handler = self._initialize_function_handler(functions, **kwargs)
 
-    def initialize_logger(self, name: str, **kwargs):
+    def _initialize_logger(self, name: str, **kwargs):
         logger = logging.getLogger(f"Agent.{name}")
         logger.setLevel("DEBUG")
         return logger
 
-    def initialize_token_settings(self, token_settings, **kwargs):
+    def _initialize_token_settings(self, token_settings, **kwargs):
         if isinstance(token_settings, dict):
             return TokenSettings(**token_settings)
         elif token_settings is None:
             return TokenSettings()
         return token_settings
 
-    def initialize_model_handler(self, **kwargs):
-        return ModelHandler()
+    @abstractmethod
+    def _initialize_model_handler(self, **kwargs):
+        pass  # pragma: no cover
 
-    def initialize_history_manager(
+    def _initialize_history_manager(
         self, history: (List[str] | HistoryGenerator), **kwargs
     ):
         return HistoryManager(
@@ -67,7 +69,7 @@ class Agent:
             max_prefix_tokens=self.token_settings.max_prefix_tokens,
         )
 
-    def initialize_function_handler(self, functions, **kwargs):
+    def _initialize_function_handler(self, functions, **kwargs):
         return FunctionHandler(
             generator=functions, max_tokens=self.token_settings.max_function_tokens
         )
@@ -93,19 +95,38 @@ class Agent:
         self.logger.debug(f"Getting response to message: {input_message}")
         self.logger.debug(f"Context = {context}")
 
+        # Validate input
+        if not isinstance(input_message, Message):
+            raise TypeError(
+                (
+                    f"input_message must be an instance of Message,"
+                    f" not {type(input_message)}"
+                )
+            )
+
         # Get functions
         functions = self.function_handler.select_functions(
             functions, input_message, history, context
         )
-        self.logger.debug(f"Functions = {[f.name for f in functions]}")
-        function_token_count = sum(f.token_count for f in functions)
+        if functions is not None:
+            self.logger.debug(f"Functions = {[f.name for f in functions]}")
+            function_token_count = sum(f.token_count for f in functions)
+        else:
+            self.logger.debug("No functions selected")
+            function_token_count = 0
 
         # Prepare history
+        self.logger.debug(f"Max tokens = {self.model_handler.max_tokens}")
+        self.logger.debug(f"Function token count = {function_token_count}")
+        self.logger.debug(
+            f"Min response tokens = {self.token_settings.min_response_tokens}"
+        )
         available_tokens = (
             self.model_handler.max_tokens
             - function_token_count
             - self.token_settings.min_response_tokens
         )
+        self.logger.debug(f"Available tokens = {available_tokens}")
         full_history = self.history_manager.create_history(
             input_message, history, context, max_tokens=available_tokens
         )
@@ -115,8 +136,6 @@ class Agent:
             history=full_history, functions=functions
         )
 
-        # Log and return
-        self.logger.info(response.content)
         return response
 
     def call_function(
@@ -154,8 +173,6 @@ class Agent:
             history=full_history, function_item=function_item
         )
 
-        # Log and return
-        self.logger.info(response.content)
         return response
 
 

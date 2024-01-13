@@ -55,6 +55,11 @@ class ModelHandler(ABC):
     and FunctionRequestMessages.
     """
 
+    max_tokens: int
+
+    def __init__(self, max_tokens: int, **kwargs) -> None:
+        self.max_tokens = max_tokens
+
     @abstractmethod
     def get_completion(
         self,
