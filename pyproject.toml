@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "chatmancy"
+version = "0.0.1"
+description = "Agent, chat, conversation framework for interacting with LLMs."
+authors = ["Caleb Case <caleb.case93@gmail.com>"]
+readme = "README.md"
+packages = [{include = "chatmancy"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+openai = "^1.2.3"
+tiktoken = "^0.5.1"
+tenacity = "^8.2.3"
+pandas = "^2.0.3"
+langchain = "^0.0.335"
+opentelemetry-api = "^1.21.0"
+dill = "^0.3.7"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^6.2.5"
+pytest-dotenv = "^0.5.2"
+flake8 = "^6.1.0"
+towncrier = "^23.6.0"
+pytest-cov = "^4.1.0"
+bump2version = "^1.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.towncrier]
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+package = "chatmancy"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]
+title_format = "## [{version}] - {project_date}"
+issue_format = "[{issue}]"
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Feature"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfix"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Misc"
+showcontent = true

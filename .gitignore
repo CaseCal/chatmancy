@@ -1,0 +1,12 @@
+# Venv
+.venv
+.env
+
+# Compiled Python bytecode
+*.py[cod]
+dist/
+
+# Log files
+*.log
+.coverage
+.vscode/settings.json
