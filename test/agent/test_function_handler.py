@@ -1,111 +1,95 @@
-# import pytest
-
-# from chatmancy.function import FunctionItem, FunctionHandler, KeywordFunctionHandler
-# from chatmancy.common import ChatModel, MessageQueue, TokenHandler
-
-
-# @pytest.fixture
-# def functions():
-#     return [
-#         FunctionItem(
-#             method=lambda: "Hello",
-#             name="greet",
-#             description="Greeting function",
-#             token_count=10,
-#         ),
-#         FunctionItem(
-#             method=lambda: "Goodbye",
-#             name="goodbye",
-#             description="Goodbye function",
-#             token_count=10,
-#         ),
-#         FunctionItem(
-#             method=lambda: "Rainy",
-#             name="weather",
-#             description="Weather Function",
-#             token_count=10,
-#         ),
-#     ]
+import pytest
+from unittest.mock import Mock
+from chatmancy.agent.functions import FunctionHandler
+from chatmancy.function.function_item import FunctionItem
+from chatmancy.message.message import Message, MessageQueue
 
 
-# def test_without_max_tokens(functions: list[FunctionItem]):
-#     token_handler = TokenHandler.from_model(ChatModel.GPT3)
-#     function_handler = FunctionHandler(token_handler)
-
-#     assert function_handler.get_functions(functions, "hi", [], {}) == functions
+def test_init_max_tokens_error():
+    with pytest.raises(TypeError):
+        FunctionHandler(max_tokens="bad value")
 
 
-# def test_token_limits(functions: list[FunctionItem]):
-#     token_handler = TokenHandler.from_model(ChatModel.GPT3)
-#     function_handler = FunctionHandler(token_handler, max_tokens=10)
+def test_select_functions():
+    handler = FunctionHandler(max_tokens=100)
+    functions = [
+        Mock(FunctionItem, token_count=10),
+        Mock(FunctionItem, token_count=20),
+        Mock(FunctionItem, token_count=30),
+    ]
+    input_message = Mock(Message)
+    history = Mock(MessageQueue)
+    context = {"key": "value"}
 
-#     assert function_handler._max_tokens == 10
-#     assert function_handler.get_functions(functions, "hi", [], {}) == [functions[0]]
+    selected_functions = handler.select_functions(
+        functions, input_message, history=history, context=context
+    )
 
-#     function_handler._max_tokens = 25
-#     assert function_handler.get_functions(functions, "hi", [], {}) == functions[:2]
+    assert len(selected_functions) == 3
+    assert selected_functions[0].token_count == 10
+    assert selected_functions[1].token_count == 20
+    assert selected_functions[2].token_count == 30
 
-#     function_handler._max_tokens = 50
-#     assert function_handler.get_functions(functions, "hi", [], {}) == functions[:3]
+
+def test_select_functions_no_max_tokens():
+    handler = FunctionHandler()
+    functions = [
+        Mock(FunctionItem, token_count=10),
+        Mock(FunctionItem, token_count=20),
+        Mock(FunctionItem, token_count=30),
+    ]
+    input_message = Mock(Message)
+    history = Mock(MessageQueue)
+    context = {"key": "value"}
+
+    selected_functions = handler.select_functions(
+        functions, input_message, history=history, context=context
+    )
+
+    assert len(selected_functions) == 3
+    assert selected_functions[0].token_count == 10
+    assert selected_functions[1].token_count == 20
+    assert selected_functions[2].token_count == 30
 
 
-# def test_keyword_function_handler():
-#     # Define some functions
-#     functions = [
-#         FunctionItem(
-#             method=lambda: "Hello",
-#             name="greet",
-#             description="Greeting function",
-#             token_count=10,
-#             tags={"greeting", "hello", "hi"},
-#         ),
-#         FunctionItem(
-#             method=lambda: "Goodbye",
-#             name="goodbye",
-#             description="Goodbye function",
-#             token_count=10,
-#             tags={"goodbye", "bye", "see you"},
-#         ),
-#         FunctionItem(
-#             method=lambda: "Rainy",
-#             name="weather",
-#             description="Weather Function",
-#             token_count=10,
-#             tags={"weather", "rain", "temperature"},
-#         ),
-#     ]
+def test_trim_functions():
+    handler = FunctionHandler(max_tokens=50)
+    functions = [
+        Mock(FunctionItem, token_count=10),
+        Mock(FunctionItem, token_count=20),
+        Mock(FunctionItem, token_count=30),
+    ]
 
-#     # Create a token handler
-#     token_handler = TokenHandler.from_model(ChatModel.GPT3)
+    trimmed_functions = handler._trim_functions(functions)
 
-#     # Create a keyword function handler
-#     keyword_handler = KeywordFunctionHandler(
-#         functions=functions,
-#         token_handler=token_handler,
-#         max_tokens=20,
-#         search_depth=5,
-#         decay_rate=0.5,
-#         relative_keyword_weighting=False,
-#     )
+    assert len(trimmed_functions) == 2
+    assert trimmed_functions[0].token_count == 10
+    assert trimmed_functions[1].token_count == 20
 
-#     # Test get_functions method
-#     input_message = token_handler.create_message(
-#         "user", "Hello, what's the temperature today?"
-#     )
-#     history = MessageQueue()
-#     context = {}
-#     result = keyword_handler.get_functions(
-#         functions=functions,
-#         input_message=input_message,
-#         history=history,
-#         context=context,
-#     )
-#     assert len(result) == 2
-#     assert result[0].name == "greet"
-#     assert result[1].name == "weather"
 
-#     # Test _count_keyword_hits method
-#     message_content = "hello, what's the temperature today?"
-#     function_tags = {"greeting", "hello", "hi"}
-#     result = keyword_handler._count_keyword_hits(message_content, function_tags)
-#     assert result == 1
+def test_trim_functions_no_max_tokens():
+    handler = FunctionHandler()
+    functions = [
+        Mock(FunctionItem, token_count=10),
+        Mock(FunctionItem, token_count=20),
+        Mock(FunctionItem, token_count=30),
+    ]
+
+    trimmed_functions = handler._trim_functions(functions)
+
+    assert len(trimmed_functions) == 3
+    assert trimmed_functions[0].token_count == 10
+    assert trimmed_functions[1].token_count == 20
+    assert trimmed_functions[2].token_count == 30
+
+
+def test_trim_functions_with_missing_tokens():
+    handler = FunctionHandler(max_tokens=100)
+    functions = [
+        Mock(FunctionItem, token_count=None),
+        Mock(FunctionItem, token_count=20),
+        Mock(FunctionItem, token_count=30),
+    ]
+
+    with pytest.raises(ValueError):
+        handler._trim_functions(functions)

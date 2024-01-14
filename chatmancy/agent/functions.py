@@ -77,7 +77,12 @@ class FunctionHandler:
             funcs = []
             for func in functions:
                 if func.token_count is None:
-                    func.token_count = self._token_handler.count_function_tokens(func)
+                    raise ValueError(
+                        (
+                            "Cannot trim functions with no token count. "
+                            "Please set a token count for all functions."
+                        )
+                    )
                 token_count += func.token_count
                 if token_count > self._max_tokens:
                     break
