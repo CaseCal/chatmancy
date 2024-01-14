@@ -25,7 +25,7 @@ class HistoryGenerator(ABC):
         Returns:
             A MessageQueue object representing the history.
         """
-        return MessageQueue()
+        pass  # pragma: no cover
 
 
 class StaticHistoryGenerator(HistoryGenerator):
@@ -40,8 +40,22 @@ class StaticHistoryGenerator(HistoryGenerator):
         super().__init__(**kwargs)
 
         self._message_q = MessageQueue(
-            UserMessage(statement) for statement in statements
+            self._parse_statement(statement) for statement in statements
         )
+
+    @staticmethod
+    def _parse_statement(statement: (str | Message)) -> Message:
+        if isinstance(statement, str):
+            return UserMessage(statement)
+        elif isinstance(statement, Message):
+            return statement
+        else:
+            raise TypeError(
+                (
+                    "Invalid statement type. "
+                    f"Expected a str or Message, got {type(statement)}."
+                )
+            )
 
     @trace(name="StaticHistoryGenerator.create_history")
     def create_history(
