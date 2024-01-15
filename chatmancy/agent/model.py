@@ -36,7 +36,7 @@ class ModelHandler(ABC):
         Returns:
             ChatCompletion: The generated chatbot response.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def call_function(
@@ -54,4 +54,4 @@ class ModelHandler(ABC):
         Returns:
             The parsed response from the OpenAI API.
         """
-        pass
+        pass  # pragma: no cover
