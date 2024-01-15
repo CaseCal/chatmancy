@@ -7,7 +7,6 @@ import logging
 from ..message import Message, MessageQueue
 from ..function import (
     FunctionItem,
-    FunctionItemGenerator,
     FunctionRequestMessage,
 )
 from ..logging import trace
@@ -32,7 +31,6 @@ class Agent(ABC):
         name: str,
         desc: str,
         history: (List[str] | HistoryGenerator) = None,
-        functions: (List[FunctionItem] | FunctionItemGenerator) = None,
         token_settings: (TokenSettings | dict) = None,
         **kwargs,
     ) -> None:
@@ -43,14 +41,14 @@ class Agent(ABC):
         self.token_settings = self._initialize_token_settings(token_settings, **kwargs)
         self.model_handler = self._initialize_model_handler(**kwargs)
         self.history_manager = self._initialize_history_manager(history, **kwargs)
-        self.function_handler = self._initialize_function_handler(functions, **kwargs)
+        self.function_handler = self._initialize_function_handler(**kwargs)
 
-    def _initialize_logger(self, name: str, **kwargs) -> logging.Logger:
+    def _initialize_logger(self, name: str, **_) -> logging.Logger:
         logger = logging.getLogger(f"Agent.{name}")
         logger.setLevel("DEBUG")
         return logger
 
-    def _initialize_token_settings(self, token_settings, **kwargs) -> TokenSettings:
+    def _initialize_token_settings(self, token_settings, **_) -> TokenSettings:
         if isinstance(token_settings, dict):
             return TokenSettings(**token_settings)
         elif token_settings is None:
@@ -69,10 +67,8 @@ class Agent(ABC):
             max_prefix_tokens=self.token_settings.max_prefix_tokens,
         )
 
-    def _initialize_function_handler(self, functions, **kwargs) -> FunctionHandler:
-        return FunctionHandler(
-            generator=functions, max_tokens=self.token_settings.max_function_tokens
-        )
+    def _initialize_function_handler(self, **_) -> FunctionHandler:
+        return FunctionHandler(max_tokens=self.token_settings.max_function_tokens)
 
     @trace(name="Agent.get_response_message")
     def get_response_message(
