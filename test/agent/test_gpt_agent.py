@@ -318,7 +318,10 @@ def test_function_call(mock_openai_client):
             "function": {
                 "name": "test_function",
                 "description": "This is a test function.",
-                "parameters": {},
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                },
             },
         }
     ]

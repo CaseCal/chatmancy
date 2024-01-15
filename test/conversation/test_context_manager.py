@@ -38,7 +38,7 @@ def test_agent_context_manager_get_context_updates(mock_agent):
         requests=[
             _FunctionRequest(
                 name=context_manager.function_item.name,
-                args={context_manager.function_item.name: {"item1": "value1"}},
+                args={"item1": "value1"},
                 id="1234",
             )
         ]

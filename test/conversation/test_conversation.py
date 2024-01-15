@@ -226,13 +226,8 @@ def test_auto_call_agent_requests():
     )
 
     # Mock agent behavior
-    def mock_respond(message, history, **kwargs):
-        if message.content == "Run a function":
-            return function_request_message
-        else:
-            return AgentMessage(content="I ran it!")
-
-    main_agent.get_response_message = mock_respond
+    main_agent.get_response_message.return_value = function_request_message
+    main_agent.give_function_response.return_value = AgentMessage(content="I ran it!")
 
     # Send the message
     user_message = UserMessage(content="Run a function")
