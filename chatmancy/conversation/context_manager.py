@@ -1,11 +1,8 @@
-import copy
 from abc import ABC, abstractmethod
 import logging
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel
-
-from chatmancy.function.function_message import _FunctionRequest
 
 from ..agent import GPTAgent
 from ..message import UserMessage, MessageQueue

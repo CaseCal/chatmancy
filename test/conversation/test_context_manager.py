@@ -55,7 +55,10 @@ def test_agent_context_manager_get_context_updates(mock_agent):
         history=sample_history,
         function_item=context_manager.function_item,
         input_message=UserMessage(
-            content="At the current point, which things are we talking about? Use the update_context functions to tell me.",
+            content=(
+                "At the current point, which things are we talking about?"
+                " Use the update_context functions to tell me."
+            ),
             token_count=21,
         ),
         context={},

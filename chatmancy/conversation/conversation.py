@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, List
 
+from chatmancy.function.function_message import _FunctionRequest
+
 from ..message import MessageQueue, Message, UserMessage, AgentMessage
 from ..agent import Agent
 from ..function import (
@@ -110,31 +112,36 @@ class Conversation:
 
         # Check function requests
         if isinstance(agent_response, FunctionRequestMessage):
-            function_response = self._handle_function_request(agent_response, functions)
+            function_response = self._handle_function_request_message(
+                agent_response, functions
+            )
 
             # Pass along unapproved requests
             if isinstance(function_response, FunctionRequestMessage):
                 return function_response
             else:
-                # Return to agent with auto-call requests
-                return self._message_agent(agent, function_response)
+                return self._send_agent_responses(agent, function_response)
 
         return agent_response
 
-    def ask_question(self, question: str) -> Message:
+    def _send_agent_responses(self, agent: Agent, responses: List[Message]) -> Message:
         """
-        Send message to main agent, and record message and response in user
-        message history.
+        Sends a list of messages to the agent and updates the history.
         """
-        m = UserMessage(question)
-        return self.send_message(m)
+        self.logger.info(f"Sending {len(responses)} response messages to agent")
+        self.user_message_history.extend(responses[:-1])
+        return agent.get_response_message(
+            responses[-1],
+            self.user_message_history.copy(),
+            context=self.context.copy(),
+        )
 
     @property
     def context(self):
         return {**self._context}
 
     @trace(name="Conversation.ask_question")
-    def send_message(self, message: Message) -> Message:
+    def send_message(self, message: (Message | str)) -> Message:
         """
         Sends a message to the conversation and returns the response.
 
@@ -144,6 +151,12 @@ class Conversation:
         Returns:
             Message: The response message.
         """
+        # Validate message
+        if isinstance(message, str):
+            message = UserMessage(content=message)
+        elif not isinstance(message, Message):
+            raise TypeError(f"message must be a string or Message, not {type(message)}")
+
         # Update context
         self._update_context([message])
 
@@ -165,35 +178,16 @@ class Conversation:
     ) -> List[FunctionItem]:
         functions = []
         for fg in self.function_generators:
-            # Generate a cache key using the FunctionItemGenerator's method
-            cache_key = fg.create_cache_key(input_message, history, context)
-
-            # Check if the functions are already in the user-provided cache
-            cached_functions = (
-                None
-                if self.function_cache is None
-                else self.function_cache.get(cache_key)
+            # generate the functions
+            generated_functions = fg.generate_functions(
+                input_message=input_message, history=history, context=context
             )
-            if cached_functions is not None:
-                self.logger.info(f"Using cached functions for {cache_key}")
-                functions.extend(cached_functions)
-            else:
-                self.logger.info(
-                    f"No cache foudn for {cache_key}, generating functions"
-                )
-                # If not in cache, generate the functions and store them in the cache
-                generated_functions = fg.generate_functions(
-                    input_message=input_message, history=history, context=context
-                )
-                functions.extend(generated_functions)
-                if self.function_cache is not None:
-                    self.function_cache.set(cache_key, generated_functions)
+            functions.extend(generated_functions)
         return functions
 
-    @trace(name="Conversation._handle_function_request")
-    def _handle_function_request(
-        self, request: FunctionRequestMessage, functions: list[FunctionItem]
-    ):
+    def _handle_function_request_message(
+        self, request_message: FunctionRequestMessage, functions: list[FunctionItem]
+    ) -> FunctionRequestMessage | List[FunctionResponseMessage]:
         """
         Handles a function request. Finds the function in the list of
         functions and calls it.
@@ -202,31 +196,48 @@ class Conversation:
         If function is auto-call, calls function and returns response.
         Otherwise, returns the function request with the function item attached.
         """
+        self.logger.info("Handling function request message")
+        self.logger.debug(f"Request message: {request_message}")
+        errors = []
+        for request in request_message.requests:
+            # Attach fi
+            try:
+                self._attach_function_item(request, functions)
+            except ValueError as e:
+                self.logger.exception(
+                    f"Could not find function {request.name} in {functions}"
+                )
+                errors.append(
+                    FunctionResponseMessage(
+                        func_name=request.name,
+                        func_id=request.id,
+                        content=f"Error: {e}",
+                    )
+                )
+                continue
 
+        if errors:
+            self.logger.warning("Errors found, returning errors")
+            return errors
+
+        # If no approval, call and return
+        if not request_message.approvals_required:
+            self.logger.info("All functions are autocall, calling them")
+            return request_message.create_responses()
+
+        # Pass on the full request if any approvals are required
+        self.logger.info("Some functions require approval, passing on request")
+        return request_message
+
+    def _attach_function_item(
+        self, request: _FunctionRequest, functions: List[FunctionItem]
+    ) -> None:
+        """
+        Attaches function items to function requests.
+        """
         # Get function item
         try:
-            fi = [f for f in functions if f.name == request.func_name][0]
+            fi = [f for f in functions if f.name == request.name][0]
         except IndexError:
-            error_message = self.token_handler.create_message(
-                "function",
-                f"Function {request.func_name} not found in list of functions.",
-            )
-            return error_message
-
-        # Handle function call if auto
-        if fi.auto_call:
-            function_payload = fi.call_method(**request.func_args)
-            self.logger.info(
-                f"Function {request.func_name} returned {function_payload}"
-            )
-
-            new_message = FunctionResponseMessage(
-                func_name=request.func_name,
-                content=function_payload,
-                token_count=self.token_handler.count_tokens(function_payload),
-            )
-            return new_message
-
-        # Add function item to message and return
+            raise ValueError(f"Function {request.name} not found in {functions}")
         request.func_item = fi
-        return request

@@ -22,8 +22,10 @@ class FunctionResponseMessage(Message):
     func_name: str
     func_id: str
 
-    def __init__(self, func_name: str, **kwargs):
-        super().__init__(sender="function", func_name=func_name, **kwargs)
+    def __init__(self, func_name: str, func_id: str, **kwargs):
+        super().__init__(
+            sender="function", func_name=func_name, func_id=func_id, **kwargs
+        )
 
 
 class _FunctionRequest(BaseModel):

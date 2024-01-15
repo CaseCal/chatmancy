@@ -138,3 +138,9 @@ class MessageQueue(deque):
 
     def __repr__(self):
         return f"MessageQueue({len(self)} items)"
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, MessageQueue):
+            return list(self) == list(__value)
+        else:
+            return super().__eq__(__value)
