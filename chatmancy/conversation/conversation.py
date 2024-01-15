@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from ..message import MessageQueue, Message, UserMessage, AgentMessage
 from ..agent import Agent
@@ -10,7 +10,6 @@ from ..function import (
     FunctionResponseMessage,
 )
 from .context_manager import ContextManager
-from .cache import CacheInterface
 from ..logging import trace
 
 
@@ -26,7 +25,6 @@ class Conversation:
         opening_prompt: str = "Hello!",
         context_managers: List[ContextManager] = None,
         function_generators: List[FunctionItemGenerator] = None,
-        function_cache: Optional[CacheInterface[str, List[FunctionItem]]] = None,
         history=None,
         name: str = None,
         context: Dict[str, str] = None,
@@ -41,7 +39,6 @@ class Conversation:
             else MessageQueue([AgentMessage(content=opening_prompt)])
         )
         self._context = context if context is not None else {}
-        self.function_cache = function_cache
         self.name = name
 
         # Spin up agents

@@ -1,76 +1,109 @@
 import copy
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
+import logging
 from typing import List, Dict, Optional
 
-from chatmancy.message.message import UserMessage
+from pydantic import BaseModel
 
-from ..agent import Agent
-from ..message import (
-    MessageQueue,
-)
+from chatmancy.function.function_message import _FunctionRequest
+
+from ..agent import GPTAgent
+from ..message import UserMessage, MessageQueue
 from ..function import FunctionItem, FunctionRequestMessage
 from ..logging import trace
 
 
-class ContextManager:
+class ContextManager(ABC):
     """
     A class that manages the context of a conversation.
 
     Attributes:
-        name (str): The name of the context manager
-        .
-    Methods:
-        get_context_updates(history: MessageQueue, current_context: Dict) -> Dict:
-            Analyzes the message history and updates the current context.
+        name (str): The name of the context manager.
     """
 
-    def __init__(
-        self,
-        name: str,
-    ) -> None:
+    def __init__(self, name: str, keys: Optional[List[str]] = None) -> None:
         self.name: str = name
+        self._static_keys = keys
+
+        self.logger = logging.getLogger(f"ContextManager.{name}")
+
+    @abstractmethod
+    def _get_context_updates(
+        self, history: MessageQueue, current_context: Dict
+    ) -> Dict:
+        """
+        Analyzes the message history and updates the current context.
+
+        Args:
+            history (MessageQueue): The list of past messages.
+            current_context (Dict): The current context.
+
+        Returns:
+            Dict: Updated context.
+        """
+        pass  # pragma: no cover
 
     def get_context_updates(self, history: MessageQueue, current_context: Dict) -> Dict:
         """
         Analyzes the message history and updates the current context.
 
-        * history: The list of past messages.
+        Args:
+            history (MessageQueue): The list of past messages.
+            current_context (Dict): The current context.
+
+        Returns:
+            Dict: Updated context.
         """
-        return {}
+        updates = self._get_context_updates(history, current_context)
+
+        # Warn if invalid
+        invalid_keys = [k for k in updates.keys() if k not in self.registered_keys]
+        if invalid_keys:
+            self.logger.warning(
+                f"Unregistered keys {invalid_keys} returned from {self.name}"
+            )
+        return {k: v for k, v in updates.items() if k in self.registered_keys}
+
+    @property
+    def registered_keys(self) -> List[str]:
+        """
+        Returns:
+            List[str]: The keys that this context manager is responsible for.
+        """
+        if self._static_keys is not None:
+            return self._static_keys
+        else:
+            return []
 
 
-@dataclass
-class ContextItem:
+class ContextItem(BaseModel):
     name: str
     description: str
     type: str = "string"
     valid_values: Optional[List[str]] = None
 
-    def to_dict(self) -> Dict:
+    def to_function_item(self) -> FunctionItem:
         """
-        Converts the ContextItem to a dict fitting JSON schema object specs.
+        Converts the ContextItem to a dictionary fitting JSON schema object specs.
 
-        :return: A dictionary representing the JSON schema object.
+        Returns:
+            Dict: A dictionary representing the JSON schema object.
         """
-        json_obj = {
+        param = {
             "type": self.type,
             "description": self.description,
         }
         if self.valid_values is not None:
-            json_obj["enum"] = self.valid_values
-        return json_obj
+            param["enum"] = self.valid_values
 
-    @staticmethod
-    def to_function_item(items: List["ContextItem"]) -> FunctionItem:
         def noop(x):
-            return x
+            return x  # pragma: no cover
 
-        params = {ci.name: ci.to_dict() for ci in items}
         return FunctionItem(
             method=noop,
-            name="update_context",
-            description="Update the current context",
-            params=params,
+            name=f"update_{self.name}_context",
+            description=f"Update the current context for {self.name}",
+            params={self.name: param},
             required=[],
             auto_call=False,
         )
@@ -91,37 +124,30 @@ class AgentContextManager(ContextManager):
     """
 
     def __init__(
-        self, name: str, context_items: List[(ContextItem | Dict)], model: str = "gpt-4"
+        self, name: str, context_item: (ContextItem | Dict), model: str = "gpt-4"
     ) -> None:
-        self.name: str = name
-
-        # Check if context_items is a list of dictionaries
-        if context_items and isinstance(context_items[0], dict):
-            # Convert each dictionary to a ContextItem object
-            self.context_items = [
-                ContextItem(**item_dict) for item_dict in context_items
-            ]
-        else:
-            self.context_items = context_items
-        self.function_item = ContextItem.to_function_item(self.context_items)
-
-        # Store Context item important values
-        self.context_item_map = {ci.name: ci for ci in self.context_items}
+        # Validate context items and create function items
+        self.context_item = ContextItem.model_validate(context_item)
+        self.function_item = self.context_item.to_function_item()
 
         # Agent
-        self._agent = Agent(
+        self._agent = GPTAgent(
             name=f"{name}_context_manager",
             desc="A context manager",
             model=model,
-            system_message=(
+            system_prompt=(
                 "You are a context manager. "
                 "You will analyze conversations to determine the current context."
             ),
-            functions=[self.function_item],
         )
 
+        # Super
+        super().__init__(name, keys=[self.context_item.name])
+
     @trace(name="AgentContextManager.get_context_updates")
-    def get_context_updates(self, history: MessageQueue, current_context: Dict) -> Dict:
+    def _get_context_updates(
+        self, history: MessageQueue, current_context: Dict
+    ) -> Dict:
         """
         Analyzes the message history and updates the current context.
 
@@ -129,9 +155,8 @@ class AgentContextManager(ContextManager):
         """
         input_message = UserMessage(
             content="At the current point, which things are we talking about? Use "
-            "the update_context function to tell me.",
+            "the update_context functions to tell me.",
         )
-
         response = self._agent.call_function(
             history=history,
             function_item=self.function_item,
@@ -143,21 +168,6 @@ class AgentContextManager(ContextManager):
         elif not response.requests:
             return {}
 
-        return self._validate_arguments(response.requests[0].args)
+        args = response.requests[0].args
 
-    def _validate_arguments(self, arguments: Dict) -> Dict:
-        # Names
-        arguments = {
-            k: v
-            for k, v in arguments.items()
-            if k in [ci.name for ci in self.context_items]
-        }
-
-        # Valid values
-        for arg_name, arg_value in copy.copy(arguments).items():
-            ci = self.context_item_map[arg_name]
-
-            if (ci.valid_values is not None) and (arg_value not in ci.valid_values):
-                arguments.pop(arg_name)
-
-        return arguments
+        return args[self.function_item.name]

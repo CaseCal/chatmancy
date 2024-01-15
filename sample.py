@@ -9,20 +9,18 @@ dotenv.load_dotenv()  # Must have openai key in .env file
 from pydantic import BaseModel
 
 # flake8: noqa
-from chatmancy.agent import Agent
+from chatmancy.agent import GPTAgent
 from chatmancy.conversation import (
     Conversation,
     ContextManager,
     ContextItem,
     AgentContextManager,
 )
-from chatmancy.conversation.cache import DictCache
 from chatmancy.message import Message, MessageQueue
 from chatmancy.function import (
     FunctionRequestMessage,
     FunctionItem,
     FunctionItemGenerator,
-    StaticFunctionItemGenerator,
 )
 
 
@@ -86,12 +84,12 @@ RESTAURANTS = {
 }
 
 
-def RecommenderAgent() -> Agent:
-    return Agent(
-        name="Sample Agent",
-        desc="Sample agent description",
+def RecommenderGPTAgent() -> GPTAgent:
+    return GPTAgent(
+        name="Sample GPTAgent",
+        desc="Sample GPTAgent description",
         model="gpt-4",
-        system_message="You are a restaurant recomendation agent. You help the user find a restaurant that fits their questions, preferences and settings.",
+        system_prompt="You are a restaurant recomendation GPTAgent. You help the user find a restaurant that fits their questions, preferences and settings.",
     )
 
 
@@ -197,7 +195,7 @@ def SampleConversation() -> Conversation:
     restaurant_fg = RestaurantFunctionGenerator()
 
     return Conversation(
-        main_agent=RecommenderAgent(),
+        main_agent=RecommenderGPTAgent(),
         context_managers=[user_cm, restaurant_cm],
         function_generators=[restaurant_fg],
     )
@@ -227,13 +225,13 @@ if __name__ == "__main__":
                 if answer == "y":
                     approval = response.create_response()
                 else:
-                    approval = conversation.main_agent.model_handler.create_message(
+                    approval = conversation.main_GPTAgent.model_handler.create_message(
                         "user",
                         f"Request to call {response.func_name} was denied",
                     )
                 response = conversation.send_message(approval)
 
-            print(f"[{response.agent_name}]: {response.content}" + "\n")
+            print(f"[{response.GPTAgent_name}]: {response.content}" + "\n")
         # except Exception as e:
         #     print(f"Error: {e}")
         except KeyboardInterrupt:

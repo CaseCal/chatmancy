@@ -29,7 +29,7 @@ class FunctionResponseMessage(Message):
 class _FunctionRequest(BaseModel):
     name: str
     args: Dict
-    func_item: Optional[FunctionItem]
+    func_item: Optional[FunctionItem] = None
     id: str
 
 
