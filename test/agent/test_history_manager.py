@@ -85,6 +85,21 @@ def test_history_manager_create_history():
     assert len(created_history) == 4
 
 
+def test_history_manager_create_raises_bad_args():
+    generator = [
+        "Statement 1",
+        "Statement 2",
+        "Statement 3",
+    ]
+    history_manager = HistoryManager(generator)
+    input_message = UserMessage("Hello", 1)
+    history = "weird history"
+    context = {"key": "value"}
+    max_tokens = 100
+    with pytest.raises(TypeError):
+        history_manager.create_history(input_message, history, context, max_tokens)
+
+
 def test_history_manager_when_input_too_large():
     generator = [
         "Statement 1",

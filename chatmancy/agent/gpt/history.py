@@ -1,6 +1,8 @@
 from typing import Dict, List
 import logging
 
+from chatmancy.message.message import UserMessage
+
 from ...agent.history import HistoryGenerator, HistoryManager
 from ...message import Message, MessageQueue
 
@@ -14,7 +16,9 @@ class GPTHistoryManager(HistoryManager):
     ) -> None:
         super().__init__(generator, max_prefix_tokens)
         # System message check
-        if system_message.sender != "system":
+        if isinstance(system_message, str):
+            system_message = Message(sender="system", content=system_message)
+        elif system_message.sender != "system":
             logging.getLogger("GPTAgent.HistoryManager").warning(
                 (
                     "The system message should have sender 'system', "
@@ -23,9 +27,10 @@ class GPTHistoryManager(HistoryManager):
             )
             system_message = Message(
                 sender="system",
-                content=system_message,
+                content=system_message.content,
                 token_count=system_message.token_count,
             )
+        self.system_message = system_message
 
         # Token check
         if self.max_prefix_tokens is not None:
@@ -36,12 +41,6 @@ class GPTHistoryManager(HistoryManager):
                         "number of prefix tokens"
                     )
                 )
-
-        # System message
-        if isinstance(system_message, str):
-            self.system_message = Message(sender="system", content=system_message)
-        else:
-            self.system_message = system_message
 
     def _create_prefix(
         self, input_message: Message, context: Dict[str, str]
