@@ -130,7 +130,7 @@ class GPTModelHandler:
         response = self._openai_client.chat.completions.create(
             model=self._model,
             messages=self._convert_history(history),
-            tools=[{"type": "function", "function": function_item.to_dict()}],
+            tools=[{"type": "function", "function": function_item.model_dump()}],
             tool_choice={
                 "type": "function",
                 "function": {"name": function_item.name},
@@ -155,6 +155,13 @@ class GPTModelHandler:
         else:
             role = message.sender
         return {"role": role, "content": message.content}
+
+    def _func_item_to_gpt(self, func_item: FunctionItem) -> Dict:
+        return {
+            "name": func_item.name,
+            "description": func_item.description,
+            "parameters": {k: v.model_dump() for k, v in func_item.params.items()},
+        }
 
     def _func_request_to_gpt(self, message: FunctionRequestMessage) -> Dict:
         return {
@@ -183,14 +190,14 @@ class GPTModelHandler:
         if tool_calls:
             requests = [
                 {
-                    "func_name": tool_call.function.name,
-                    "func_args": json.loads(tool_call.function.arguments),
-                    "func_id": tool_call.id,
+                    "name": tool_call.function.name,
+                    "args": json.loads(tool_call.function.arguments),
+                    "id": tool_call.id,
+                    "func_item": None,
                 }
                 for tool_call in tool_calls
             ]
             return FunctionRequestMessage(
-                sender="assistant",
                 requests=requests,
                 token_count=response.usage.completion_tokens,
             )

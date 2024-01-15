@@ -7,12 +7,16 @@ from ...function import (
 )
 
 from ...agent.base import Agent, TokenSettings
-from ...agent.history import HistoryGenerator, HistoryManager
-from ...agent.model import ModelHandler
+from ...agent.history import HistoryGenerator
+from ...message import Message
+
+
+from .model import GPTModelHandler
+from .history import GPTHistoryManager
 
 
 class GPTAgent(Agent):
-    """Agent class for generating chat responses using GPT-3."""
+    """Agent class for generating chat responses using GPT"""
 
     def __init__(
         self,
@@ -23,6 +27,7 @@ class GPTAgent(Agent):
         history: (List[str] | HistoryGenerator) = None,
         functions: (List[FunctionItem] | FunctionItemGenerator) = None,
         token_settings: (TokenSettings | dict) = None,
+        model_max_tokens: int = None,
     ) -> None:
         """Create a new Agent instance.
 
@@ -38,16 +43,19 @@ class GPTAgent(Agent):
             history=history,
             functions=functions,
             token_settings=token_settings,
+            model_max_tokens=model_max_tokens,
         )
 
-    def initialize_model_handler(self, model: str, **kwargs):
-        return ModelHandler(model=model)
+    def _initialize_model_handler(
+        self, model: str, model_max_tokens: int = None, **kwargs
+    ):
+        return GPTModelHandler(model=model, max_tokens=model_max_tokens)
 
-    def initialize_history_manager(
+    def _initialize_history_manager(
         self, history: (List[str] | HistoryGenerator), system_prompt: str, **kwargs
     ):
-        return HistoryManager(
-            system_message=system_prompt,
+        return GPTHistoryManager(
+            system_message=Message(sender="system", content=system_prompt),
             generator=history,
             max_prefix_tokens=self.token_settings.max_prefix_tokens,
         )

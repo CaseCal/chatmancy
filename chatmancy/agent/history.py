@@ -166,6 +166,15 @@ class HistoryManager:
             ValueError: If the maximum number of tokens is less than the number
                  of tokens in the context and input message.
         """
+        # Validate args
+        if not isinstance(history, MessageQueue):
+            try:
+                history = MessageQueue(history)
+            except Exception:
+                raise TypeError(
+                    f"history must be a MessageQueue, not a {type(history)}."
+                )
+
         # Prepare prefix
         logging.getLogger("Agent.HistoryManager").debug("Creating prefix")
         logging.getLogger("Agent.HistoryManager").debug(
@@ -175,10 +184,14 @@ class HistoryManager:
         logging.getLogger("Agent.HistoryManager").debug(
             f"Prefix token count is {prefix.token_count}"
         )
-        context_message = UserMessage(f"The current context is {context}")
-
+        if context:
+            context_message = UserMessage(f"The current context is {context}")
+            context_token_count = context_message.token_count
+        else:
+            context_message = None
+            context_token_count = 0
         # Validate
-        if max_tokens < context_message.token_count + input_message.token_count:
+        if max_tokens < context_token_count + input_message.token_count:
             raise ValueError(
                 "The maximum number of tokens is less than the number of tokens in "
                 "the context and input message"
@@ -191,10 +204,15 @@ class HistoryManager:
         available_tokens = (
             max_tokens
             - prefix.token_count
-            - context_message.token_count
+            - context_token_count
             - input_message.token_count
         )
+
         history = history.get_last_n_tokens(available_tokens)
 
         # Combine
-        return prefix + history + [context_message]
+        result = prefix + history
+        if context_message:
+            result += [context_message]
+        result += [input_message]
+        return result

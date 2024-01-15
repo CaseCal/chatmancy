@@ -82,7 +82,7 @@ def test_history_manager_create_history():
         input_message, history, context, max_tokens
     )
     assert isinstance(created_history, MessageQueue)
-    assert len(created_history) == 4
+    assert len(created_history) == 5
 
 
 def test_history_manager_create_raises_bad_args():

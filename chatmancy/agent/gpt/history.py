@@ -1,8 +1,6 @@
 from typing import Dict, List
 import logging
 
-from chatmancy.message.message import UserMessage
-
 from ...agent.history import HistoryGenerator, HistoryManager
 from ...message import Message, MessageQueue
 
