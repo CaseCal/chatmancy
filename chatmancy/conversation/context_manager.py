@@ -52,6 +52,8 @@ class ContextManager(ABC):
             Dict: Updated context.
         """
         updates = self._get_context_updates(history, current_context)
+        if not updates:
+            return {}
 
         # Warn if invalid
         invalid_keys = [k for k in updates.keys() if k not in self.registered_keys]
@@ -160,11 +162,16 @@ class AgentContextManager(ContextManager):
             input_message=input_message,
             context={},
         )
+        self.logger.debug(f"Response from agent: {response}")
+
         if not isinstance(response, FunctionRequestMessage):
             return {}
         elif not response.requests:
             return {}
-
         args = response.requests[0].args
+        if not args:
+            return {}
 
-        return args[self.function_item.name]
+        return {
+            self.context_item.name: args[self.context_item.name],
+        }

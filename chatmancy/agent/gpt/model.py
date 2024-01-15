@@ -163,7 +163,13 @@ class GPTModelHandler:
         return {
             "name": func_item.name,
             "description": func_item.description,
-            "parameters": {k: v.model_dump() for k, v in func_item.params.items()},
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    k: v.model_dump(exclude_none=True)
+                    for k, v in func_item.params.items()
+                },
+            },
         }
 
     def _func_request_to_gpt(self, message: FunctionRequestMessage) -> Dict:
