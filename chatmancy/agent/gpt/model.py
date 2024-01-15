@@ -104,7 +104,8 @@ class GPTModelHandler:
         # Add functions if present and enabled
         if functions:
             args["tools"] = [
-                {"type": "function", "function": f.to_dict()} for f in functions
+                {"type": "function", "function": self._func_item_to_gpt(f)}
+                for f in functions
             ]
 
         # Call and parse
@@ -130,7 +131,9 @@ class GPTModelHandler:
         response = self._openai_client.chat.completions.create(
             model=self._model,
             messages=self._convert_history(history),
-            tools=[{"type": "function", "function": function_item.model_dump()}],
+            tools=[
+                {"type": "function", "function": self._func_item_to_gpt(function_item)}
+            ],
             tool_choice={
                 "type": "function",
                 "function": {"name": function_item.name},

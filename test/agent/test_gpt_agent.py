@@ -1,7 +1,11 @@
 import pytest
 from unittest.mock import Mock
 from chatmancy.function.function_item import FunctionItem
-from chatmancy.function.function_message import FunctionRequestMessage
+from chatmancy.function.function_message import (
+    _FunctionRequest,
+    FunctionRequestMessage,
+    FunctionResponseMessage,
+)
 
 from chatmancy.message import Message
 from chatmancy.agent.gpt import GPTAgent
@@ -177,6 +181,61 @@ def test_agent_get_response_message(mock_openai_client):
         input_message=Message(sender="user", content="This is a test input."),
         history=MessageQueue([UserMessage("This is a test history.")]),
         context={"test": "context"},
+        functions=[
+            FunctionItem(
+                method=lambda: "This is a test response.",
+                name="test_function",
+                description="This is a test function.",
+                params={},
+                token_count=10,
+            ),
+        ],
+    )
+    assert response == AgentMessage("This is a test response.", token_count=10)
+
+    assert mock_openai_client.chat.completions.create.call_args[1]
+
+
+@pytest.mark.usefixtures("mock_openai_message_completion")
+def test_agent_response_with_history(mock_openai_client):
+    # Set agent
+    agent = GPTAgent(
+        name="test_agent",
+        desc="This is a test agent.",
+        model="gpt-3.5-turbo",
+        system_prompt="You are a helpful chat agent.",
+        token_settings={"max_prefix_tokens": 100},
+    )
+    agent.model_handler._openai_client = mock_openai_client
+
+    # Create history
+    history = MessageQueue(
+        [
+            UserMessage("Call a function please", token_count=10),
+            FunctionRequestMessage(
+                requests=[
+                    _FunctionRequest(
+                        name="test_function",
+                        args={},
+                        func_item=None,
+                        id="test_function",
+                    )
+                ]
+            ),
+            FunctionResponseMessage(
+                func_name="test_function",
+                content="Function ran",
+                func_id="test_function",
+                token_count=10,
+            ),
+            AgentMessage("I called the function", token_count=10),
+        ]
+    )
+
+    response = agent.get_response_message(
+        input_message=Message(sender="user", content="Thank you"),
+        history=history,
+        context={"test": "context"},
     )
     assert response == AgentMessage("This is a test response.", token_count=10)
 
@@ -259,7 +318,7 @@ def test_function_call(mock_openai_client):
             "function": {
                 "name": "test_function",
                 "description": "This is a test function.",
-                "token_count": 10,
+                "parameters": {},
             },
         }
     ]
