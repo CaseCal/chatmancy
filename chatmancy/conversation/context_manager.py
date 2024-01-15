@@ -22,7 +22,7 @@ class ContextManager(ABC):
         self.name: str = name
         self._static_keys = keys
 
-        self.logger = logging.getLogger(f"ContextManager.{name}")
+        self.logger = logging.getLogger(f"chatmancy.ContextManager.{name}")
 
     @abstractmethod
     def _get_context_updates(

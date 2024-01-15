@@ -54,7 +54,7 @@ class Conversation:
             function_generators = []
         self.function_generators = function_generators
 
-        self.logger = logging.getLogger("Conversation")
+        self.logger = logging.getLogger("chatmancy.Conversation")
         self.logger.setLevel("INFO")
 
     def _validate(self, main_agent, opening_prompt, context_managers, history, context):

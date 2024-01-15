@@ -17,7 +17,7 @@ class GPTHistoryManager(HistoryManager):
         if isinstance(system_message, str):
             system_message = Message(sender="system", content=system_message)
         elif system_message.sender != "system":
-            logging.getLogger("GPTAgent.HistoryManager").warning(
+            logging.getLogger("chatmancy.GPTHistoryManager").warning(
                 (
                     "The system message should have sender 'system', "
                     "it will be replaced with a system message"

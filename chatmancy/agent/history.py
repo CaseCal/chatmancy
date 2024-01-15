@@ -25,7 +25,7 @@ class HistoryGenerator(ABC):
         Returns:
             A MessageQueue object representing the history.
         """
-        pass  # pragma: no cover
+        self.logger = logging.getLogger("chatmancy.HistoryGenerator")
 
 
 class StaticHistoryGenerator(HistoryGenerator):
@@ -100,6 +100,8 @@ class HistoryManager:
         generator: (List[str] | HistoryGenerator),
         max_prefix_tokens: int = None,
     ) -> None:
+        self.logger = logging.getLogger("chatmancy.HistoryManager")
+
         # Tokens
         self.max_prefix_tokens = max_prefix_tokens
 
@@ -176,14 +178,10 @@ class HistoryManager:
                 )
 
         # Prepare prefix
-        logging.getLogger("Agent.HistoryManager").debug("Creating prefix")
-        logging.getLogger("Agent.HistoryManager").debug(
-            f"Max prefix tokens is {self.max_prefix_tokens}"
-        )
+        self.logger.debug("Creating prefix")
+        self.logger.debug(f"Max prefix tokens is {self.max_prefix_tokens}")
         prefix = self._create_prefix(input_message, context)
-        logging.getLogger("Agent.HistoryManager").debug(
-            f"Prefix token count is {prefix.token_count}"
-        )
+        self.logger.debug(f"Prefix token count is {prefix.token_count}")
         if context:
             context_message = UserMessage(f"The current context is {context}")
             context_token_count = context_message.token_count
@@ -198,9 +196,7 @@ class HistoryManager:
             )
 
         # Trim
-        logging.getLogger("Agent.HistoryManager").debug(
-            f"Trimming history to {max_tokens} tokens"
-        )
+        self.logger.debug(f"Trimming history to {max_tokens} tokens")
         available_tokens = (
             max_tokens
             - prefix.token_count
