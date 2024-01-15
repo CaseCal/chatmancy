@@ -44,7 +44,7 @@ class Agent(ABC):
         self.function_handler = self._initialize_function_handler(**kwargs)
 
     def _initialize_logger(self, name: str, **_) -> logging.Logger:
-        logger = logging.getLogger(f"Agent.{name}")
+        logger = logging.getLogger(f"chatmancy.Agent.{name}")
         logger.setLevel("DEBUG")
         return logger
 
@@ -167,6 +167,30 @@ class Agent(ABC):
         # Get response from model
         response = self.model_handler.call_function(
             history=full_history, function_item=function_item
+        )
+
+        return response
+
+    def give_function_response(
+        self,
+        history: MessageQueue,
+    ) -> Message:
+        """ """
+
+        # Prepare history
+        available_tokens = (
+            self.model_handler.max_tokens - self.token_settings.min_response_tokens
+        )
+        full_history = self.history_manager.create_history(
+            None, history, None, max_tokens=available_tokens
+        )
+
+        # Get response from model
+        self.logger.debug("Getting response to function request with history:")
+        for message in full_history:
+            self.logger.debug(f"  {message}")
+        response = self.model_handler.get_completion(
+            history=full_history, functions=None
         )
 
         return response

@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletion
 from ...logging import trace
 from ...message import Message, AgentMessage, UserMessage, MessageQueue
 from ...function import FunctionItem, FunctionResponseMessage, FunctionRequestMessage
+from ..base import ModelHandler
 
 MODEL_INFO = {
     "gpt-4-1106-preview": {
@@ -45,7 +46,7 @@ MODEL_INFO = {
 }
 
 
-class GPTModelHandler:
+class GPTModelHandler(ModelHandler):
     def __init__(
         self,
         model: str,
@@ -69,15 +70,15 @@ class GPTModelHandler:
         self._model = model
         self._openai_client = OpenAI(**kwargs)
         self._agent_name = agent_name
-        if max_tokens is not None:
-            self.max_tokens = max_tokens
-        else:
+        if max_tokens is None:
             try:
-                self.max_tokens = MODEL_INFO[model]["max_tokens"]
+                max_tokens = MODEL_INFO[model]["max_tokens"]
             except KeyError:
                 raise ValueError(
                     f"Model name {model} not found. Please manally pass max_tokens"
                 )
+
+        super().__init__(max_tokens=max_tokens, **kwargs)
 
     @trace(name="Model.submit_request")
     def get_completion(
@@ -109,6 +110,7 @@ class GPTModelHandler:
             ]
 
         # Call and parse
+        self.logger.debug(f"Calling OpenAI API completion with args: {args}")
         response: ChatCompletion = self._openai_client.chat.completions.create(**args)
         return self._parse_gpt_response(response)
 

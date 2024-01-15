@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 from typing import List
 
 
@@ -18,6 +19,9 @@ class ModelHandler(ABC):
 
     def __init__(self, max_tokens: int, **kwargs) -> None:
         self.max_tokens = max_tokens
+        self.logger = logging.getLogger(
+            f"chatmancy.ModelHandler.{self.__class__.__name__}"
+        )
 
     @abstractmethod
     def get_completion(

@@ -129,12 +129,9 @@ class Conversation:
         Sends a list of messages to the agent and updates the history.
         """
         self.logger.info(f"Sending {len(responses)} response messages to agent")
-        self.user_message_history.extend(responses[:-1])
-        return agent.get_response_message(
-            responses[-1],
-            self.user_message_history.copy(),
-            context=self.context.copy(),
-        )
+        self.logger.debug(f"Messages: {responses}")
+        self.user_message_history.extend(responses)
+        return agent.give_function_response(self.user_message_history.copy())
 
     @property
     def context(self):

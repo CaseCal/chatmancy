@@ -95,11 +95,13 @@ def RecommenderGPTAgent() -> GPTAgent:
 
 class UserContextManager(ContextManager):
     def __init__(self, name: str, user: dict) -> None:
-        super().__init__(name)
+        super().__init__(name, keys=["user"])
 
         self.user = user
 
-    def get_context_updates(self, history: MessageQueue, current_context: Dict) -> Dict:
+    def _get_context_updates(
+        self, history: MessageQueue, current_context: Dict
+    ) -> Dict:
         """
         Analyzes the message history and updates the current context.
 
@@ -114,22 +116,22 @@ class RestaurantContextManager(AgentContextManager):
         self.restaurants = restaurants
         super().__init__(
             name,
-            context_items=[
-                ContextItem(
-                    name="restaurant",
-                    description="The restaurant crrently being discussed.",
-                    valid_values=list(restaurants.keys()),
-                )
-            ],
+            context_item=ContextItem(
+                name="restaurant",
+                description="The restaurant crrently being discussed.",
+                valid_values=list(restaurants.keys()),
+            ),
         )
 
-    def get_context_updates(self, history: MessageQueue, current_context: Dict) -> Dict:
+    def _get_context_updates(
+        self, history: MessageQueue, current_context: Dict
+    ) -> Dict:
         """
         Analyzes the message history and updates the current context. If a resturant is found, adds all that restaurants info to context
         """
         restaurant_name = (
             super()
-            .get_context_updates(history, current_context)
+            ._get_context_updates(history, current_context)
             .get("restaurant", None)
         )
         if restaurant_name in self.restaurants:
@@ -202,11 +204,14 @@ def SampleConversation() -> Conversation:
 
 
 if __name__ == "__main__":
-    # Prevent logs from printing to console
-    root = logging.getLogger()
-    root._handlers = []
-    root.setLevel(logging.CRITICAL + 1)
-    logging.getLogger("ddtrace").setLevel(logging.CRITICAL + 1)
+    # chat_logger = logging.getLogger("chatmancy")
+    # chat_logger.setLevel(logging.INFO)
+    # formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    # handler = logging.StreamHandler()
+    # handler.setFormatter(formatter)
+    # chat_logger.addHandler(handler)
+
+    # logging.getLogger("chatmancy.Conversation").setLevel(logging.DEBUG)
 
     conversation = SampleConversation()
 
@@ -218,7 +223,7 @@ if __name__ == "__main__":
             question = input()
             print("### Response: ")
             print(" Thinking...", end="\r")
-            response: Message = conversation.ask_question(question)
+            response: Message = conversation.send_message(question)
             if isinstance(response, FunctionRequestMessage):
                 print(f"Function Request: {response.content} \n Allow? y/n")
                 answer = input()
@@ -231,7 +236,7 @@ if __name__ == "__main__":
                     )
                 response = conversation.send_message(approval)
 
-            print(f"[{response.GPTAgent_name}]: {response.content}" + "\n")
+            print(f"[{response.sender}]: {response.content}" + "\n")
         # except Exception as e:
         #     print(f"Error: {e}")
         except KeyboardInterrupt:

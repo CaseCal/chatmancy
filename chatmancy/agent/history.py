@@ -177,8 +177,13 @@ class HistoryManager:
                     f"history must be a MessageQueue, not a {type(history)}."
                 )
 
+        # Handle none message
+        history = history.copy()
+        if input_message is None:
+            input_message = history.pop()
+
         # Prepare prefix
-        self.logger.debug("Creating prefix")
+        self.logger.info("Creating prefix")
         self.logger.debug(f"Max prefix tokens is {self.max_prefix_tokens}")
         prefix = self._create_prefix(input_message, context)
         self.logger.debug(f"Prefix token count is {prefix.token_count}")
