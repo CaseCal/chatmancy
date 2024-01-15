@@ -73,12 +73,14 @@ class FunctionItem(BaseModel):
             return v
         enc = tiktoken.encoding_for_model("gpt-4")
 
-        # Parse content that counts towards token count
-        relevant_content = {
-            k: v
-            for k, v in v_info.data.items()
-            if k in ["name", "description", "params", "required"]
-        }
+        # Check required params and encode
+        relevant_content_keys = ["name", "description", "params", "required"]
+        relevant_content = {}
+        for k in relevant_content_keys:
+            if k in v_info.data:
+                relevant_content[k] = v_info.data[k]
+            else:
+                raise ValueError(f"Missing required field {k}")
         relevant_content["params"] = {
             k: v.model_dump_json() for k, v in relevant_content["params"].items()
         }
