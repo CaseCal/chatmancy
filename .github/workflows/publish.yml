@@ -5,14 +5,24 @@ on:
     types: [published]
 
 jobs:
-  publish-service-client-package:
+  publish-package:
     runs-on: ubuntu-latest
     steps:
-      - name: Publish PyPi package
-        uses: code-specialist/pypi-poetry-publish@v1
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          PACKAGE_DIRECTORY: "./example-package/"
-          PYTHON_VERSION: "3.10"
-          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_REGISTRY_PASSWORD: ${{ secrets.PYPI_PAT }}
-          PUBLISH_REGISTRY: ${{ vars.PUBLISH_REGISTRY}}"
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pipx install poetry
+          poetry install --with dev
+
+      - name: Build and publish package
+        run: |
+          poetry config pypi-token.target ${{ secrets.PYPI_TOKEN }}
+          poetry config repositories.target ${{ vars.PUBLISH_REGISTRY}}
+          poetry publish --build --repository target
