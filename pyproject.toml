@@ -26,13 +26,13 @@ bump2version = "~1.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.pytest]
-addopts = ["--cov=chatmancy"]
 
 [tool.pytest.ini_options]
+addopts = "--cov=chatmancy"
 filterwarnings = [
     "ignore:The `__fields__` attribute is deprecated.*:DeprecationWarning"
 ]
+
 [tool.towncrier]
 directory = "changelog.d"
 filename = "CHANGELOG.md"
@@ -56,3 +56,6 @@ showcontent = true
 directory = "misc"
 name = "Misc"
 showcontent = true
+
+[tool.flake8]
+max-line-length = 88
