@@ -131,6 +131,7 @@ class Agent(ABC):
         response = self.model_handler.get_completion(
             history=full_history, functions=functions
         )
+        response.agent_name = self.name
 
         return response
 

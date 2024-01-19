@@ -70,7 +70,7 @@ def test_get_response_message():
     history = MessageQueue()
     assert agent.get_response_message(
         UserMessage("Hello", 1), history=history
-    ) == AgentMessage("Hello", token_count=1)
+    ) == AgentMessage("Hello", token_count=1, agent_name="test_agent")
 
 
 def test_get_response_message_with_str():
@@ -106,7 +106,10 @@ def test_get_response_message_with_functions():
     assert agent.get_response_message(
         UserMessage("Hello", 1), history=history, functions=functions
     ) == FunctionRequestMessage(
-        requests=[request], token_count=1, function_item=functions[0]
+        requests=[request],
+        token_count=1,
+        function_item=functions[0],
+        agent_name="test_agent",
     )
 
 

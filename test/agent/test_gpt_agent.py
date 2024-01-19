@@ -191,7 +191,9 @@ def test_agent_get_response_message(mock_openai_client):
             ),
         ],
     )
-    assert response == AgentMessage("This is a test response.", token_count=10)
+    assert response == AgentMessage(
+        "This is a test response.", token_count=10, agent_name="test_agent"
+    )
 
     assert mock_openai_client.chat.completions.create.call_args[1]
 
@@ -237,7 +239,9 @@ def test_agent_response_with_history(mock_openai_client):
         history=history,
         context={"test": "context"},
     )
-    assert response == AgentMessage("This is a test response.", token_count=10)
+    assert response == AgentMessage(
+        "This is a test response.", token_count=10, agent_name="test_agent"
+    )
 
     assert mock_openai_client.chat.completions.create.call_args[1]
 
@@ -263,7 +267,9 @@ def test_trims_history(mock_openai_client):
         history=history,
         context={},
     )
-    assert response == AgentMessage("This is a test response.", token_count=10)
+    assert response == AgentMessage(
+        "This is a test response.", token_count=10, agent_name="test_agent"
+    )
     call_args = mock_openai_client.chat.completions.create.call_args[1]
     assert len(call_args["messages"]) == 2
     assert call_args["messages"][0] == {
