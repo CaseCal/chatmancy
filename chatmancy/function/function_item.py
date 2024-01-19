@@ -1,6 +1,7 @@
 import base64
 from functools import partial
 import json
+import re
 import dill as pickle
 from typing import Any, Callable, List, Dict, Optional, Set, Union
 
@@ -63,6 +64,16 @@ class FunctionItem(BaseModel):
         "validate_assignment": True,
         "arbitrary_types_allowed": True,
     }
+
+    @field_validator("name", mode="after")
+    def validate_name_format(cls, v: str, v_info: ValidationInfo):
+        """
+        Ensure name in '^[a-zA-Z0-9_-]{1,64}$' format
+        """
+        r = r"^[a-zA-Z0-9_-]{1,64}$"
+        if not re.match(r, v):
+            raise ValueError(f"Invalid name format for {v}, must match {r}")
+        return v
 
     @field_validator(
         "token_count",

@@ -2,7 +2,7 @@ import pytest
 from chatmancy.function import FunctionItem, FunctionParameter
 
 
-def test_func_item_init():
+def test_init():
     func_item = FunctionItem(
         method=lambda a, b: a + b,
         name="add",
@@ -19,7 +19,7 @@ def test_func_item_init():
     assert func_item.required == ["a", "b"]
 
 
-def test_func_item_init_dict_params():
+def test_init_dict_params():
     func_item = FunctionItem(
         method=lambda a, b: a + b,
         name="add",
@@ -36,7 +36,7 @@ def test_func_item_init_dict_params():
     assert func_item.required == ["a", "b"]
 
 
-def test_func_item_init_token_override():
+def test_init_token_override():
     func_item = FunctionItem(
         method=lambda a, b: a + b,
         name="add",
@@ -50,7 +50,7 @@ def test_func_item_init_token_override():
     assert func_item.token_count == 50
 
 
-def test_func_item_init_required_override():
+def test_init_required_override():
     func_item = FunctionItem(
         method=lambda a, b: a + b,
         name="add",
@@ -62,6 +62,16 @@ def test_func_item_init_required_override():
         required=["a"],
     )
     assert func_item.required == ["a"]
+
+
+def test_init_name_validation():
+    with pytest.raises(ValueError):
+        FunctionItem(
+            method=lambda: None,
+            name="Name with Spaces",
+            description="Add a and b",
+            params={},
+        )
 
 
 def test_func_item_call():
