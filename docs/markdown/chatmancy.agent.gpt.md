@@ -4,21 +4,21 @@
 
 ## chatmancy.agent.gpt.agent module
 
-### *class* chatmancy.agent.gpt.agent.GPTAgent(name, desc, model, system_prompt='You are a helpful chat agent.', history=None, functions=None, token_settings=None, model_max_tokens=None)
+### *class* chatmancy.agent.gpt.agent.GPTAgent(name, desc, model, system_prompt='You are a helpful chat agent.', history=None, token_settings=None, model_max_tokens=None)
 
 Bases: [`Agent`](chatmancy.agent.md#chatmancy.agent.base.Agent)
 
 Agent class for generating chat responses using GPT
 
 * **Parameters:**
-  * **name** (*str*) – 
-  * **desc** (*str*) – 
-  * **model** (*str*) – 
-  * **system_prompt** (*str*) – 
-  * **history** (*List* *[**str* *]*  *|* [*HistoryGenerator*](chatmancy.agent.md#chatmancy.agent.history.HistoryGenerator)) – 
-  * **functions** (*List* *[*[*FunctionItem*](chatmancy.function.md#chatmancy.function.function_item.FunctionItem) *]*  *|* [*FunctionItemGenerator*](chatmancy.function.md#chatmancy.function.generator.FunctionItemGenerator)) – 
-  * **token_settings** ([*TokenSettings*](chatmancy.agent.md#chatmancy.agent.base.TokenSettings) *|* *dict*) – 
-  * **model_max_tokens** (*int*) – 
+  * **name** (*str*) – The name of the agent.
+  * **desc** (*str*) – A description of the agent.
+  * **model** (*str*) – The name of the OpenAI model to use.
+  * **system_prompt** (*str*) – The prompt to use when generating system responses.
+  * **history** (*List* *[**str* *]*  *|* [*HistoryGenerator*](chatmancy.agent.md#chatmancy.agent.history.HistoryGenerator)) – A generator to add a history prefix to all calls to the agent.
+  * **token_settings** ([*TokenSettings*](chatmancy.agent.md#chatmancy.agent.base.TokenSettings) *|* *dict*) – Settings for the token generation.
+  * **model_max_tokens** (*int*) – The maximum number of tokens to generate for the model.
+    Required if the passed model is not recorded in GPTModelHandler.
 
 ## chatmancy.agent.gpt.history module
 

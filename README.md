@@ -51,7 +51,7 @@ poetry install
 
 ## Usage
 
-### Creating an Agent
+### Creating an [Agent](./docs/markdown/chatmancy.agent.gpt.md)
 
 To create an agent, you must provide a prompt and a list of functions. The prompt is the initial prompt that will be used to start the conversation. The functions are a list of functions that will be used to generate completions. These functions can be dynamically generated based on context, and can be used to generate completions based on the context.
 
