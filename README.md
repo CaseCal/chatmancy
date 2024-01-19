@@ -81,7 +81,7 @@ response.content
 >> Yet in your query, an echo of shared sentiment is made.
 ```
 
-### Creating Functions
+### Creating [Functions](./docs/markdown/chatmancy.function.md)
 
 Functions are provided to the agent through the conversation, and are used to give the agent a list of additional actions to take.
 
