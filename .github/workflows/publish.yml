@@ -13,6 +13,6 @@ jobs:
         with:
           PACKAGE_DIRECTORY: "./example-package/"
           PYTHON_VERSION: "3.10"
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_REGISTRY_PASSWORD: ${{ secrets.PYPI_PAT }}
           PUBLISH_REGISTRY: ${{ vars.PUBLISH_REGISTRY}}"
