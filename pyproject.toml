@@ -22,6 +22,8 @@ pytest-dotenv = "~0.5"
 flake8 = "~6.1"
 towncrier = "~23.6"
 bump2version = "~1.0"
+sphinx = "~7.2"
+sphinx-markdown-builder = "~0.6"
 
 [build-system]
 requires = ["poetry-core"]

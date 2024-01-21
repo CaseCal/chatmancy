@@ -10,3 +10,4 @@ dist/
 *.log
 .coverage
 .vscode/settings.json
+docs/markdown/.doctrees/environment.pickle
