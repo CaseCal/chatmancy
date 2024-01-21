@@ -7,12 +7,13 @@ readme = "README.md"
 packages = [{include = "chatmancy"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 openai = "~1.8"
 tiktoken = "~0.5"
 tenacity = "~8.2"
 opentelemetry-api = "~1.21"
 dill = "~0.3"
+flake8-pyproject = "^1.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~6.2"
@@ -28,13 +29,13 @@ sphinx-markdown-builder = "~0.6"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.pytest]
-addopts = ["--cov=chatmancy"]
 
 [tool.pytest.ini_options]
+addopts = "--cov=chatmancy"
 filterwarnings = [
     "ignore:The `__fields__` attribute is deprecated.*:DeprecationWarning"
 ]
+
 [tool.towncrier]
 directory = "changelog.d"
 filename = "CHANGELOG.md"
@@ -58,3 +59,6 @@ showcontent = true
 directory = "misc"
 name = "Misc"
 showcontent = true
+
+[tool.flake8]
+max-line-length = 88

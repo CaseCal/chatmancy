@@ -16,6 +16,14 @@ from openai.types.chat import ChatCompletion
 from chatmancy.message.message import AgentMessage, MessageQueue, UserMessage
 
 
+@pytest.fixture(autouse=True)
+def patch_openai_client(monkeypatch):
+    monkeypatch.setattr(
+        "chatmancy.agent.gpt.model.OpenAI",
+        Mock(),
+    )
+
+
 def test_init():
     agent = GPTAgent(
         name="test_agent",
