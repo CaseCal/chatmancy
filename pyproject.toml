@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "chatmancy"
-version = "0.0.2"
+version = "0.0.1"
 description = "Agent, chat, conversation framework for interacting with LLMs."
 authors = ["Caleb Case <caleb.case93@gmail.com>"]
 readme = "README.md"
