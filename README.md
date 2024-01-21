@@ -1,3 +1,6 @@
+[![Lint](https://github.com/CaseCal/chatmancy/actions/workflows/lint.yml/badge.svg)](https://github.com/CaseCal/chatmancy/actions/workflows/lint.yml)
+[![CI](https://github.com/CaseCal/chatmancy/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/CaseCal/chatmancy/actions/workflows/ci.yml)
+
 # Chatmancy
 
 ## Introduction
