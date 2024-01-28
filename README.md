@@ -38,19 +38,21 @@ Use Langchain if:
 
 ## Installation
 
-1. Clone the repository:
+1. Install from pypi:
 
 ```
-git clone [repository URL]
+pip install chatamancy
 ```
 
-2. Install required packages (Requires Poetry):
+2. Ensure OPENAI_API_KEY is set in the environment.
 
-```
-poetry install
-```
+## What is FRAG?
 
-3. Ensure OPENAI_API_KEY is set in the environment.
+Functional Retreival Augmented Generation (FRAG) is a technique for using LLMs to create agents that can perform actions. FRAG uses a combination of a prompt, context and functions to generate completions that can be used to perform actions.
+
+For example, consider a stock broker agent that has access to a users account. A traditional RAG solution would involve encoding the user's entire position, history and preferences into a vector database using semantic embedding, and then using the most similar fragments of text each time to auugment the prompt.
+
+A FRAG solution uses a more structured approach. Instead of sematic embedding comparison, the agent is given a list of functions, such as "view_stock_history", "view_current_position", etc. These functions can be designed to provide accurate and well-formatted data, to be responsive to other conditions, and to easily be access controlled. This results in a more focused agent that is less prone to hallucinations and confabulations.
 
 ## Usage
 
@@ -132,4 +134,63 @@ response = convo.send_message("Please buy 100 shares of AAPL stock")
 >> "Bought 100 shares of AAPL stock!"
 response.content
 >> "I have successfully purchased 100 shares of AAPL stock for you."
+```
+
+### Creating [Context Managers](./docs/markdown/chatmancy.conversation.md)
+
+Context managers are used to manage context across messages. They are used to update the context based on the message history, and to provide context to the agent when generating completions. Context managers are also used to provide context to function generators, allowing for dynamic function generation.
+
+For simple usage, you can use the built-in AgentContextManager, which will use an agent to identify context items, and will update the context based on the agent's response.
+
+For more advanced usage, you can create a custom ContextManager. Some use cases of this include:
+
+- Get a user from the auth service, and incldue their name, preferences and other information in the context.
+- Identify another person being discussed, and insert a summary of prior interactions with them into the context.
+- Identify a specific stock from context, restricted to a list of stocks that the user owns, and inclde extra information about the user's permission to buy/sell the stock.
+
+```python
+import dotenv
+from chatmancy.agent import GPTAgent
+from chatmancy.conversation import Conversation, AgentContextManager
+
+dotenv.load_dotenv()
+
+
+agent = GPTAgent(
+    name="Literary Analyst",
+    desc="A literary analyst that can discuss books and authors.",
+    model="gpt-4",
+    system_prompt=(
+        "You are a literary analyst discussing books and authors. Answer succintly"
+        " and in a literary manner."
+    ),
+)
+
+book_cm = AgentContextManager(
+    name="BookContextManager",
+    context_item={
+        "name": "book_name",
+        "description": "The name of the book being discussed.",
+    },
+)
+genre_cm = AgentContextManager(
+    name="GenreContextManager",
+    context_item={
+        "name": "genre",
+        "description": "The genre of the book or topic being discussed.",
+    },
+)
+
+convo = Conversation(
+    main_agent=agent,
+    context_managers=[book_cm, genre_cm],
+)
+
+response = convo.send_message("Hi, lets talk about some Sci-Fi books.")
+convo.context
+>> {"genre": "Sci-Fi"}
+
+response = convo.send_message("I just read Left Hand of Darkness, that was a good one.")
+convo.context
+>> {"genre": "Sci-Fi", "book_name": "Left Hand of Darkness"}
 ```
